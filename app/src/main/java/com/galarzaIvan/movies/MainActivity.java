@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
                         showError(getString(R.string.default_error_message));
                     }
                 } else {
-                    showError(getString(R.string.no_network_connection));
+                    showError(getString(R.string.default_error_message));
                     Log.e(TAG, "Unsuccessful call: " + response.toString());
                 }
             }
@@ -201,12 +201,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Call<MovieDbResponse> createPopularMoviesCall() {
+        setTitle(getString(R.string.popular));
         return mMovieRequests.getPopularMovies(
                 MovieDBConstants.API_KEY,
                 MovieDBConstants.LANGUAGE);
     }
 
     private Call<MovieDbResponse> createTopRatedMoviesCall() {
+        setTitle(getString(R.string.top_rated));
         return mMovieRequests.getMoviesTopRated(
                 MovieDBConstants.API_KEY,
                 MovieDBConstants.LANGUAGE);
