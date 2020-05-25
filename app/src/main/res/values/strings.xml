@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">Movies</string>
     <string name="movie_poster">Movie poster</string>
+    <string name="top_rated">Top Rated Movies</string>
+    <string name="popular">Popular Movies</string>
+    <string name="retry">Retry</string>
+    <string name="default_error_message">Ops! we have a problem here! try it later, please.</string>
+    <string name="no_network_connection">You don\'t have any network connection. Please, connect to
+        the internet and try again.</string>
 </resources>
