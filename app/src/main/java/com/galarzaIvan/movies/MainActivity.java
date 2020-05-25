@@ -3,31 +3,39 @@ package com.galarzaIvan.movies;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import android.os.Bundle;
 
-import com.galarzaIvan.movies.adapters.MovieAdapter;
-import com.galarzaIvan.movies.classes.Movie;
+import android.os.Bundle;
+import android.util.Log;
+
+import com.galarzaIvan.movies.classes.MovieAdapter;
+import com.galarzaIvan.movies.requests.MovieRequests;
+import com.galarzaIvan.movies.constants.MovieDBConstants;
 import com.galarzaIvan.movies.constants.AppConstants;
+import com.galarzaIvan.movies.models.MovieDbResponse;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
+
+    private String TAG = "MainActivity";
 
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
 
-    private Movie[] mMoviesList;
+    private MovieRequests mMovieRequests;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // In this method I will init all the views of this activity
-        initViews();
-        // RecyclerView configs
-        configRecyclerView();
-        // GetData from MoviesDB
-        mMoviesList = getData();
-        mMovieAdapter.setMovieList(null);
-        mMovieAdapter.setMovieList(mMoviesList);
+
+        initViews();            // In this method I will init all the views of this activity
+        configRecyclerView();   // RecyclerView configs
+        initRetrofit();         // Init Retrofit
+        getData();
     }
 
     private void initViews() {
@@ -35,21 +43,57 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void configRecyclerView() {
+        mRecyclerView.setHasFixedSize(true);
         GridLayoutManager gridLayoutManager = new GridLayoutManager(
                 this,
                 AppConstants.GRID_COLLUMNS
         );
         mRecyclerView.setLayoutManager(gridLayoutManager);
-        mRecyclerView.setHasFixedSize(true);
         mMovieAdapter = new MovieAdapter();
         mRecyclerView.setAdapter(mMovieAdapter);
     }
 
-    private Movie[] getData() {
-        Movie[] data = new Movie[15];
-        for (int i = 0; i < 10; i++) {
-            data[i] = new Movie();
-        }
-        return data;
+    private void initRetrofit() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(MovieDBConstants.HOST)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        mMovieRequests = retrofit.create(MovieRequests.class);
+    }
+
+    private void getData() {
+        // TODO: switch
+        Call<MovieDbResponse> callResponse = mMovieRequests.getPopularMovies(
+                MovieDBConstants.API_KEY,
+                MovieDBConstants.LANGUAGE);
+        getMovies(callResponse);
+    }
+
+    private void getMovies(Call<MovieDbResponse> myCall) {
+        myCall.enqueue(new Callback<MovieDbResponse>() {
+            @Override
+            public void onResponse(Call<MovieDbResponse> call, Response<MovieDbResponse> response) {
+                if (response.isSuccessful()) {
+                    if (response.body() != null) {
+                        mMovieAdapter.setMovieList(response.body().results);
+                    } else {
+                        mMovieAdapter.setMovieList(null);
+                        showError();
+                    }
+                } else {
+                    Log.e(TAG, "Unsuccessful call: "+  response.toString());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MovieDbResponse> call, Throwable t) {
+                Log.e(TAG, "onFailure: " + t.toString() );
+                showError();
+            }
+        });
+    }
+
+    private void showError() {
+
     }
 }

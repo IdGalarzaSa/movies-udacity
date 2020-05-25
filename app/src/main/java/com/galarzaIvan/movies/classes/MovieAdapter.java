@@ -1,7 +1,6 @@
-package com.galarzaIvan.movies.adapters;
+package com.galarzaIvan.movies.classes;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,14 +10,19 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.galarzaIvan.movies.R;
-import com.galarzaIvan.movies.classes.Movie;
+import com.galarzaIvan.movies.constants.MovieDBConstants;
+import com.galarzaIvan.movies.models.Movie;
 import com.squareup.picasso.Picasso;
+
+import java.util.List;
 
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapterViewHolder>{
 
-    private Movie[] mMovieList;
+    private final static String TAG = "MovieAdapter";
+    private List<Movie> mMovieList;
 
-    public void setMovieList(Movie[] movies){
+
+    public void setMovieList(List<Movie> movies){
         mMovieList = movies;
         notifyDataSetChanged();
     }
@@ -37,33 +41,32 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
 
     @Override
     public void onBindViewHolder(@NonNull MovieAdapterViewHolder holder, int position) {
-        Movie movie = mMovieList[position];
-        holder.setMovie(movie, position);
+        Movie movie = mMovieList.get(position);
+        holder.setMovie(movie);
     }
 
     @Override
     public int getItemCount() {
-
         if (this.mMovieList == null)
             return 0;
-
-        return mMovieList.length;
+        return mMovieList.size();
     }
 
     static class MovieAdapterViewHolder extends RecyclerView.ViewHolder {
-
         private ImageView mMoviePoster;
-        private Movie mMovie;
-
         MovieAdapterViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Init view
+            // Init ImageView
             mMoviePoster= (ImageView) itemView.findViewById(R.id.iv_moviePoster);
         }
 
-        private void setMovie(Movie movie, int position){
-            this.mMovie = movie;
-            Picasso.get().load("https://picsum.photos/id/"+position+"/400/700").into(mMoviePoster);
+        private void setMovie(Movie movie){
+            String url = MovieDBConstants.BASE_IMAGE_URL +movie.getPosterPath();
+            Picasso.get()
+                    .load(url)
+                    .error(R.drawable.image_not_found)
+                    .placeholder(R.drawable.progress_animation)
+                    .into(mMoviePoster);
         }
     }
 
