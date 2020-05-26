@@ -17,10 +17,10 @@
 
         <TextView
             android:id="@+id/tv_errorMessage"
-            android:textColor="#dadada"
+            android:textColor="@color/whiteColor"
             android:textAlignment="center"
             android:text="@string/default_error_message"
-            android:textSize="24sp"
+            android:textSize="@dimen/ly_textView_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
@@ -40,5 +40,30 @@
         android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+
+    <LinearLayout
+        android:id="@+id/ly_progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:textColor="@color/whiteColor"
+            android:textAlignment="center"
+            android:text="@string/loading"
+            android:textSize="@dimen/ly_textView_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ProgressBar
+            android:layout_marginTop="8dp"
+            android:layout_width="25dp"
+            android:layout_height="25dp"/>
+
+    </LinearLayout>
 
 </FrameLayout>

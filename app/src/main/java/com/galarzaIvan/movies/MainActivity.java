@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private Context mContext;
     private ActionBar mActionBar;
     private Boolean isOnline;
+    private LinearLayout mLinearLayoutLoading;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,12 +62,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mContext = this;
         mActionBar = getSupportActionBar();
         netWorkConnection();
-
         initViews();            // In this method I will init all the views of this activity
         configRecyclerView();   // RecyclerView configs
         initRetrofit();         // Init Retrofit
         getData(createTopRatedMoviesCall()); // Set a default top rated movies call
-
     }
 
     private void netWorkConnection() {
@@ -98,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mRecyclerView = (RecyclerView) findViewById(R.id.rv_movies);
 
         mLinearLayoutError = (LinearLayout) findViewById(R.id.ly_error);
+        mLinearLayoutLoading = (LinearLayout) findViewById(R.id.ly_progress);
         mErrorMessage = (TextView) findViewById(R.id.tv_errorMessage);
 
         // Retry buttton
@@ -134,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private void getData(final Call<MovieDbResponse> myCall) {
         if (isOnline) {
             hideError();
+            showLoading();
             getMovies(myCall);
         } else {
             showError(getString(R.string.no_network_connection));
@@ -151,11 +152,11 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             public void onResponse(Call<MovieDbResponse> call, Response<MovieDbResponse> response) {
                 if (response.isSuccessful()) {
                     if (response.body() != null) {
-                        mMovieAdapter.setMovieList(response.body().results);
                         hideError();
+                        mMovieAdapter.setMovieList(response.body().results);
                     } else {
-                        mMovieAdapter.setMovieList(null);
                         showError(getString(R.string.default_error_message));
+                        mMovieAdapter.setMovieList(null);
                     }
                 } else {
                     showError(getString(R.string.default_error_message));
@@ -165,8 +166,8 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
             @Override
             public void onFailure(Call<MovieDbResponse> call, Throwable t) {
-                Log.e(TAG, "onFailure: " + t.toString());
                 showError(getString(R.string.default_error_message));
+                Log.e(TAG, "onFailure: " + t.toString());
             }
         });
     }
@@ -175,11 +176,13 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mErrorMessage.setText(errorMessage);
         mLinearLayoutError.setVisibility(View.VISIBLE);
         mRecyclerView.setVisibility(View.GONE);
+        hideLoading();
     }
 
     private void hideError() {
         mLinearLayoutError.setVisibility(View.GONE);
         mRecyclerView.setVisibility(View.VISIBLE);
+        hideLoading();
     }
 
     @Override
@@ -226,5 +229,13 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         Intent intent = new Intent(this, MovieInfoActivity.class);
         intent.putExtra(AppConstants.MOVIE_EXTRA,data);
         startActivity(intent);
+    }
+
+    private void showLoading(){
+        mLinearLayoutLoading.setVisibility(View.VISIBLE);
+    }
+
+    private void hideLoading(){
+        mLinearLayoutLoading.setVisibility(View.GONE);
     }
 }
