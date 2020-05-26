@@ -18,10 +18,10 @@
             android:contentDescription="@string/backdrop_image_movie_description" />
 
         <LinearLayout
-            android:paddingTop="16dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:paddingTop="16dp">
 
             <ImageView
                 android:id="@+id/iv_movieInfo_poster"
@@ -53,10 +53,18 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="2dp"
                     android:isIndicator="true"
                     android:numStars="5"
-                    android:progressTint="@color/starsActiveColor"/>
+                    android:progressTint="@color/starsActiveColor" />
+
+                <TextView
+                    android:id="@+id/tv_movieInfo_voteAverage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_horizontal"
+                    android:textColor="@color/whiteColor" />
 
                 <TextView
                     android:id="@+id/tv_movieInfo_releaseDate"
@@ -66,16 +74,16 @@
                     android:textColor="@color/whiteColor" />
 
             </LinearLayout>
-            
+
 
         </LinearLayout>
 
         <TextView
             android:id="@+id/tv_movieInfo_description"
-            android:layout_margin="8dp"
-            android:textColor="@color/whiteColor"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:textColor="@color/whiteColor" />
 
     </LinearLayout>
 
