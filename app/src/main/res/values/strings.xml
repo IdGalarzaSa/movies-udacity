@@ -7,4 +7,5 @@
     <string name="default_error_message">Ops! we have a problem here! try it later, please.</string>
     <string name="no_network_connection">You don\'t have any network connection. Please, connect to
         the internet and try again.</string>
+    <string name="backdrop_image_movie_description">Backdrop Image - Movie description</string>
 </resources>
