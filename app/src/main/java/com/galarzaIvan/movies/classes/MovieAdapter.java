@@ -21,6 +21,16 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
     private final static String TAG = "MovieAdapter";
     private List<Movie> mMovieList;
 
+    private final MovieAdapterOnClickHandler mClickHandler;
+
+
+    public MovieAdapter(MovieAdapterOnClickHandler clickHandler){
+        mClickHandler = clickHandler;
+    }
+
+    public interface MovieAdapterOnClickHandler{
+        void movieClickListener(Movie movie);
+    }
 
     public void setMovieList(List<Movie> movies){
         mMovieList = movies;
@@ -52,12 +62,13 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
         return mMovieList.size();
     }
 
-    static class MovieAdapterViewHolder extends RecyclerView.ViewHolder {
+    public class MovieAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         private ImageView mMoviePoster;
         MovieAdapterViewHolder(@NonNull View itemView) {
             super(itemView);
             // Init ImageView
             mMoviePoster= (ImageView) itemView.findViewById(R.id.iv_moviePoster);
+            itemView.setOnClickListener(this);
         }
 
         private void setMovie(Movie movie){
@@ -67,6 +78,13 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
                     .error(R.drawable.image_not_found)
                     .placeholder(R.drawable.progress_animation)
                     .into(mMoviePoster);
+        }
+
+        @Override
+        public void onClick(View v) {
+            int adapterPosition = getAdapterPosition();
+            Movie movie = mMovieList.get(adapterPosition);
+            mClickHandler.movieClickListener(movie);
         }
     }
 

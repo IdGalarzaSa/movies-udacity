@@ -7,11 +7,12 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkRequest;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,11 +22,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.galarzaIvan.movies.classes.MovieAdapter;
+import com.galarzaIvan.movies.models.Movie;
 import com.galarzaIvan.movies.requests.MovieRequests;
 import com.galarzaIvan.movies.constants.MovieDBConstants;
 import com.galarzaIvan.movies.constants.AppConstants;
 import com.galarzaIvan.movies.models.MovieDbResponse;
+import com.google.gson.Gson;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -34,7 +38,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler {
 
     private String TAG = "MainActivity";
 
@@ -114,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
                 AppConstants.GRID_COLLUMNS
         );
         mRecyclerView.setLayoutManager(gridLayoutManager);
-        mMovieAdapter = new MovieAdapter();
+        mMovieAdapter = new MovieAdapter(this);
         mRecyclerView.setAdapter(mMovieAdapter);
     }
 
@@ -128,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
     // For default gets the popular movies
     private void getData(final Call<MovieDbResponse> myCall) {
-        if (isOnline){
+        if (isOnline) {
             hideError();
             getMovies(myCall);
         } else {
@@ -214,4 +218,13 @@ public class MainActivity extends AppCompatActivity {
                 MovieDBConstants.LANGUAGE);
     }
 
+    @Override
+    public void movieClickListener(Movie movie) {
+
+        //Parse data from an object to json (String) to send inside an intent
+        String data = new Gson().toJson(movie);
+        Intent intent = new Intent(this, MovieInfoActivity.class);
+        intent.putExtra(AppConstants.MOVIE_EXTRA,data);
+        startActivity(intent);
+    }
 }

@@ -3,7 +3,6 @@ package com.galarzaIvan.movies;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
-import android.media.Rating;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.RatingBar;
@@ -13,9 +12,11 @@ import android.widget.Toast;
 import com.galarzaIvan.movies.constants.AppConstants;
 import com.galarzaIvan.movies.constants.MovieDBConstants;
 import com.galarzaIvan.movies.models.Movie;
+import com.google.gson.Gson;
 import com.squareup.picasso.Picasso;
 
 public class MovieInfoActivity extends AppCompatActivity {
+    private final static String TAG = "AppCompatActivity";
 
     private Movie mMovieData;
 
@@ -33,15 +34,15 @@ public class MovieInfoActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
 
-        if (intent != null && !intent.hasExtra(AppConstants.MOVIE_EXTRA)) {
-            mMovieData = (Movie) intent.getSerializableExtra(AppConstants.MOVIE_EXTRA);
+        if (intent != null && intent.hasExtra(AppConstants.MOVIE_EXTRA)) {
+            String data = intent.getStringExtra(AppConstants.MOVIE_EXTRA);
+            mMovieData = new Gson().fromJson(data,Movie.class);
+            initViews();
+            loadViews();
         } else {
             Toast.makeText(this, "This movie hasn't information", Toast.LENGTH_LONG).show();
             finish();
         }
-
-        initViews();
-        loadViews();
     }
 
     private void initViews() {
@@ -57,14 +58,17 @@ public class MovieInfoActivity extends AppCompatActivity {
 
     private void loadViews() {
 
+        String backdropUrl = MovieDBConstants.BASE_BACKDROP_IMAGE_URL+mMovieData.getBackdropPath();
+        String posterUrl = MovieDBConstants.BASE_IMAGE_URL+mMovieData.getPosterPath();
+
         Picasso.get()
-                .load(MovieDBConstants.BASE_IMAGE_URL+mMovieData.getBackdropPath())
+                .load(backdropUrl)
                 .error(R.drawable.image_not_found)
                 .placeholder(R.drawable.progress_animation)
                 .into(mMovieBackdropImage);
 
         Picasso.get()
-                .load(MovieDBConstants.BASE_IMAGE_URL+mMovieData.getPosterPath())
+                .load(posterUrl)
                 .error(R.drawable.image_not_found)
                 .placeholder(R.drawable.progress_animation)
                 .into(mMoviePosterImage);
@@ -75,7 +79,7 @@ public class MovieInfoActivity extends AppCompatActivity {
          * Calculate the average based on 5 stars instead of the average of 10 stars that
          * I get from MovieDB
          */
-        float rating = (float) (mMovieData.getVoteAverage() * 5) / 100;
+        float rating = (float) (mMovieData.getVoteAverage() * 5) / 10;
         mMovieRating.setRating(rating);
 
         mMovieReleaseDate.setText(mMovieData.getReleaseDate());

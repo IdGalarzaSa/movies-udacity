@@ -18,6 +18,7 @@
             android:contentDescription="@string/backdrop_image_movie_description" />
 
         <LinearLayout
+            android:paddingTop="16dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">

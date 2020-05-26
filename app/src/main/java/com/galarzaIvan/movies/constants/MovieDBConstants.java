@@ -4,6 +4,7 @@ public class MovieDBConstants {
 
     public final static String HOST = "https://api.themoviedb.org/3/";
     public final static String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/w300";
+    public final static String BASE_BACKDROP_IMAGE_URL = "http://image.tmdb.org/t/p/w500";
 
     // Routes
     public final static String TOP_RATED_MOVIES= "movie/top_rated";
