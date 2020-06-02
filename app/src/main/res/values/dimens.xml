@@ -4,5 +4,6 @@
     <dimen name="text_size_trailer_name">18sp</dimen>
     <dimen name="basic_margin">8dp</dimen>
 
-    <dimen name="subTittle_movie_information">24sp</dimen>
+    <dimen name="subTitle_movie_information">24sp</dimen>
+    <dimen name="text_24sp">24sp</dimen>
 </resources>

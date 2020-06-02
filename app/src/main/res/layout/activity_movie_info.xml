@@ -75,7 +75,6 @@
 
             </LinearLayout>
 
-
         </LinearLayout>
 
         <TextView
@@ -85,17 +84,33 @@
             android:layout_margin="@dimen/basic_margin"
             android:textColor="@color/whiteColor" />
 
+        <TextView
+            android:id="@+id/tv_loading_movieInformation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/basic_margin"
+            android:gravity="center"
+            android:text="@string/loading"
+            android:textColor="@color/whiteColor"
+            android:textSize="@dimen/subTitle_movie_information" />
+
+        <ProgressBar
+            android:id="@+id/pb_movieInformation"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_marginBottom="@dimen/basic_margin"
+            android:layout_gravity="center_horizontal" />
 
         <TextView
+            android:id="@+id/tv_subTitle_trailer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/basic_margin"
             android:text="@string/movie_trailers"
             android:textAllCaps="true"
             android:textColor="@color/whiteColor"
-            android:textSize="@dimen/subTittle_movie_information"
+            android:textSize="@dimen/subTitle_movie_information"
             android:textStyle="bold" />
-
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_trailers"
@@ -103,15 +118,15 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/basic_margin" />
 
-
         <TextView
+            android:id="@+id/tv_subTitle_review"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/basic_margin"
             android:text="@string/reviews"
             android:textAllCaps="true"
             android:textColor="@color/whiteColor"
-            android:textSize="@dimen/subTittle_movie_information" />
+            android:textSize="@dimen/subTitle_movie_information" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_reviews"

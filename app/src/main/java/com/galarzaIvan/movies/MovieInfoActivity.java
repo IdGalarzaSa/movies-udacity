@@ -7,13 +7,16 @@ import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,12 +43,13 @@ import retrofit2.Retrofit;
 public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapter.TrailerAdapterOnClickHandler {
     private final static String TAG = "AppCompatActivity";
 
+    private Context mContext;
     private Movie mMovieData;
     private MovieRequests mMovieRequests;
     private Boolean isFavorite = false;
-    private String mTrailerKey = "YQRHrco73g4";
+    private String mTrailerKey;
 
-    // General Views
+    // Information Views
     private ImageView mMovieBackdropImage;
     private ImageView mMoviePosterImage;
     private TextView mMovieTittle;
@@ -53,6 +57,12 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
     private TextView mMovieReleaseDate;
     private TextView mMovieDescription;
     private RatingBar mMovieRating;
+
+    // Extra Views
+    private TextView mTrailerSubtitle;
+    private TextView mReviewSubtitle;
+    private ProgressBar mProgressBar;
+    private TextView mLoadingText;
 
     // Recyclers
     private RecyclerView mTrailersRecycler;
@@ -64,6 +74,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_info);
+        mContext = this;
 
         Intent intent = getIntent();
         String data = "";
@@ -87,6 +98,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
     }
 
     private void initViews() {
+        // Information movie
         mMovieBackdropImage = (ImageView) findViewById(R.id.iv_movieInfo_backdrop);
         mMoviePosterImage = (ImageView) findViewById(R.id.iv_movieInfo_poster);
 
@@ -97,8 +109,15 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
 
         mMovieRating = (RatingBar) findViewById(R.id.rb_movieInfo_rating);
 
+        //recyclers
         mTrailersRecycler = (RecyclerView) findViewById(R.id.rv_trailers);
         mReviewsRecycler = (RecyclerView) findViewById(R.id.rv_reviews);
+
+        //Extra views
+        mTrailerSubtitle = (TextView) findViewById(R.id.tv_subTitle_trailer);
+        mReviewSubtitle = (TextView) findViewById(R.id.tv_subTitle_review);
+        mProgressBar = (ProgressBar) findViewById(R.id.pb_movieInformation);
+        mLoadingText = (TextView) findViewById(R.id.tv_loading_movieInformation);
     }
 
     private void initRetrofit() {
@@ -160,6 +179,8 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
     }
 
     private void getMoviesTrailers() {
+        showLoading(true);
+        showTrailers(false);
         Call<TrailerResponse> myCall = mMovieRequests.getMoviesTrailers(
                 mMovieData.getId(),
                 MovieDBConstants.API_KEY,
@@ -171,7 +192,17 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                 if (response.isSuccessful()) {
                     if (response.body() != null) {
                         Log.e(TAG, "onResponseTrailer: " + response.body().getResults());
-                        //hideError();
+                        showLoading(false);
+                        showTrailers(true);
+
+                        /*
+                        Getting the key of the first trailer for saving in a variable that I will
+                        use for share. The validations if it's null it's gonna be in shareMovie()
+                        method
+                        */
+
+                        mTrailerKey = response.body().getResults().get(0).getKey();
+
                         mTrailerAdapter.setTrailerList(response.body().getResults());
                     } else {
                         //showError(getString(R.string.default_error_message));
@@ -192,6 +223,8 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
     }
 
     private void getMoviesReviews() {
+        showLoading(true);
+        showReviews(false);
         Call<ReviewResponse> myCall = mMovieRequests.getMoviesReviews(
                 mMovieData.getId(),
                 MovieDBConstants.API_KEY,
@@ -204,7 +237,8 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                     if (response.body() != null) {
                         Log.e(TAG, "onResponseReview: " + response.body().getResults());
 
-                        //hideError();
+                        showLoading(false);
+                        showReviews(true);
                         mReviewAdapter.setReviewList(response.body().getResults());
                     } else {
                         //showError(getString(R.string.default_error_message));
@@ -222,6 +256,41 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                 Log.e(TAG, "onFailure: " + t.toString());
             }
         });
+    }
+
+    private void favoriteMovieSelected(MenuItem item) {
+        if (isFavorite) {
+            // Change to white color
+            isFavorite = false;
+            DrawableCompat.setTint(
+                    DrawableCompat.wrap(item.getIcon()),
+                    ContextCompat.getColor(getApplicationContext(), R.color.whiteColor)
+            );
+        } else {
+            // Change to accent color
+            isFavorite = true;
+            DrawableCompat.setTint(
+                    DrawableCompat.wrap(item.getIcon()),
+                    ContextCompat.getColor(getApplicationContext(), R.color.colorAccent)
+            );
+        }
+    }
+
+    private void shareMovie() {
+        if (mTrailerKey != null) {
+            String youtubeURL = AppConstants.BASE_YOUTUBE_URL + mTrailerKey;
+            String message = getString(R.string.share_message_trailer) + youtubeURL;
+
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_TEXT, message);
+            sendIntent.setType("text/html");
+
+            Intent shareIntent = Intent.createChooser(sendIntent, null);
+            startActivity(shareIntent);
+        } else {
+            Toast.makeText(mContext, R.string.no_trailer_to_share, Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -252,36 +321,33 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
         return super.onOptionsItemSelected(item);
     }
 
-    private void favoriteMovieSelected(MenuItem item) {
-        if (isFavorite) {
-            // Change to white color
-            isFavorite = false;
-            DrawableCompat.setTint(
-                    DrawableCompat.wrap(item.getIcon()),
-                    ContextCompat.getColor(getApplicationContext(), R.color.whiteColor)
-            );
+    private void showTrailers(boolean show) {
+        if (show) {
+            mTrailerSubtitle.setVisibility(View.VISIBLE);
+            mTrailersRecycler.setVisibility(View.VISIBLE);
         } else {
-            // Change to accent color
-            isFavorite = true;
-            DrawableCompat.setTint(
-                    DrawableCompat.wrap(item.getIcon()),
-                    ContextCompat.getColor(getApplicationContext(), R.color.colorAccent)
-            );
+            mTrailerSubtitle.setVisibility(View.GONE);
+            mTrailersRecycler.setVisibility(View.GONE);
         }
     }
 
-    private void shareMovie(){
-        if (mTrailerKey != null){
-            String youtubeURL = AppConstants.BASE_YOUTUBE_URL + mTrailerKey;
-            String message = getString(R.string.share_message_trailer) + youtubeURL;
+    private void showReviews(boolean show) {
+        if (show) {
+            mReviewSubtitle.setVisibility(View.VISIBLE);
+            mReviewsRecycler.setVisibility(View.VISIBLE);
+        } else {
+            mReviewSubtitle.setVisibility(View.GONE);
+            mReviewsRecycler.setVisibility(View.GONE);
+        }
+    }
 
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, message);
-            sendIntent.setType("text/html");
-
-            Intent shareIntent = Intent.createChooser(sendIntent, null);
-            startActivity(shareIntent);
+    private void showLoading(boolean show) {
+        if (show) {
+            mProgressBar.setVisibility(View.VISIBLE);
+            mLoadingText.setVisibility(View.VISIBLE);
+        } else {
+            mProgressBar.setVisibility(View.GONE);
+            mLoadingText.setVisibility(View.GONE);
         }
     }
 }
