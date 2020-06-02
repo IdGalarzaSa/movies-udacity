@@ -22,6 +22,7 @@ import android.widget.TextView;
 
 import com.galarzaIvan.movies.classes.MovieAdapter;
 import com.galarzaIvan.movies.classes.RetrofitController;
+import com.galarzaIvan.movies.database.AppDatabase;
 import com.galarzaIvan.movies.models.Movie;
 import com.galarzaIvan.movies.requests.MovieRequests;
 import com.galarzaIvan.movies.constants.MovieDBConstants;
@@ -29,6 +30,7 @@ import com.galarzaIvan.movies.constants.AppConstants;
 import com.galarzaIvan.movies.models.MovieDbResponse;
 import com.google.gson.Gson;
 
+import java.util.List;
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -50,6 +52,9 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private Boolean isOnline;
     private LinearLayout mLinearLayoutLoading;
 
+    //Database
+    private AppDatabase mDb;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,6 +62,10 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         Objects.requireNonNull(getSupportActionBar()).setElevation(0);
 
         mContext = this;
+
+        // Init Database
+        mDb = AppDatabase.getInstance(this);
+
         netWorkConnection();
         initViews();            // In this method I will init all the views of this activity
         configRecyclerView();   // RecyclerView configs
@@ -189,14 +198,18 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         int menuItemThatWasSelected = item.getItemId();
         Call<MovieDbResponse> callResponse;
         switch (menuItemThatWasSelected) {
+            case R.id.favorites:
+                getFavorites();
+                break;
             case R.id.order_by_top_rated_movies:
                 callResponse = createTopRatedMoviesCall();
+                getData(callResponse);
                 break;
             case R.id.order_by_popular_movies:
             default:
                 callResponse = createPopularMoviesCall();
+                getData(callResponse);
         }
-        getData(callResponse);
         return super.onOptionsItemSelected(item);
     }
 
@@ -212,6 +225,11 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         return mMovieRequests.getMoviesTopRated(
                 MovieDBConstants.API_KEY,
                 MovieDBConstants.LANGUAGE);
+    }
+
+    private void getFavorites() {
+        List<Movie> movies = mDb.favoriteDao().getFavoritesMovies();
+        mMovieAdapter.setMovieList(movies);
     }
 
     @Override

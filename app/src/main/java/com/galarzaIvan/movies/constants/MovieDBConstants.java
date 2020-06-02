@@ -21,5 +21,4 @@ public class MovieDBConstants {
     public final static String API_KEY ="";
     public final static String LANGUAGE = "en-US";
 
-
 }

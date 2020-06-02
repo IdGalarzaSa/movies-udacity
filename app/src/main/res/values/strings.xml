@@ -17,4 +17,5 @@
     <string name="share_item_menu">shareItemMenu</string>
     <string name="share_message_trailer">Hey!!! I found this movie and I think that we can enjoy it. Would you like to see it?. Check this trailer:\n</string>
     <string name="no_trailer_to_share">This movie doesn\'t have a trailer to share.</string>
+    <string name="favorites_movies">Favorites movies</string>
 </resources>

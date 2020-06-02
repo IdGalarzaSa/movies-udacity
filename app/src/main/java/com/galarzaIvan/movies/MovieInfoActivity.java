@@ -26,7 +26,10 @@ import com.galarzaIvan.movies.classes.ReviewAdapter;
 import com.galarzaIvan.movies.classes.TrailerAdapter;
 import com.galarzaIvan.movies.constants.AppConstants;
 import com.galarzaIvan.movies.constants.MovieDBConstants;
+import com.galarzaIvan.movies.database.AppDatabase;
+import com.galarzaIvan.movies.database.Favorite;
 import com.galarzaIvan.movies.models.Movie;
+import com.galarzaIvan.movies.models.Review;
 import com.galarzaIvan.movies.models.ReviewResponse;
 import com.galarzaIvan.movies.models.TrailerInfo;
 import com.galarzaIvan.movies.models.TrailerResponse;
@@ -35,6 +38,8 @@ import com.google.gson.Gson;
 import com.squareup.picasso.Picasso;
 
 
+import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -42,10 +47,14 @@ import retrofit2.Retrofit;
 
 public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapter.TrailerAdapterOnClickHandler {
     private final static String TAG = "AppCompatActivity";
-
     private Context mContext;
+
     private Movie mMovieData;
+    private List<TrailerInfo> mTrailerInfoList;
+    private List<Review> mReviewList;
+
     private MovieRequests mMovieRequests;
+
     private Boolean isFavorite = false;
     private String mTrailerKey;
 
@@ -70,6 +79,9 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
     private TrailerAdapter mTrailerAdapter;
     private ReviewAdapter mReviewAdapter;
 
+    //DataBase
+    private AppDatabase mDb;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +89,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
         mContext = this;
 
         Intent intent = getIntent();
-        String data = "";
+        String data = null;
 
         if (intent == null || !intent.hasExtra(AppConstants.MOVIE_EXTRA)) {
             Toast.makeText(this, R.string.movie_without_information, Toast.LENGTH_LONG).show();
@@ -86,15 +98,23 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
             data = intent.getStringExtra(AppConstants.MOVIE_EXTRA);
         }
 
+        if (data == null)
+            finish();
+
         mMovieData = new Gson().fromJson(data, Movie.class);
 
         initViews();
+        initDB();
         initRetrofit();
         configTrailersRecyclerView();
         configReviewsRecyclerView();
         loadViews();
         getMoviesTrailers();
         getMoviesReviews();
+    }
+
+    private void initDB() {
+        mDb = AppDatabase.getInstance(mContext);
     }
 
     private void initViews() {
@@ -192,6 +212,9 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                 if (response.isSuccessful()) {
                     if (response.body() != null) {
                         Log.e(TAG, "onResponseTrailer: " + response.body().getResults());
+
+                        mTrailerInfoList = response.body().getResults();
+
                         showLoading(false);
                         showTrailers(true);
 
@@ -237,6 +260,8 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                     if (response.body() != null) {
                         Log.e(TAG, "onResponseReview: " + response.body().getResults());
 
+                        mReviewList = response.body().getResults();
+
                         showLoading(false);
                         showReviews(true);
                         mReviewAdapter.setReviewList(response.body().getResults());
@@ -273,6 +298,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                     DrawableCompat.wrap(item.getIcon()),
                     ContextCompat.getColor(getApplicationContext(), R.color.colorAccent)
             );
+            mDb.favoriteDao().insertFavorite(new Favorite(mMovieData, mTrailerInfoList, mReviewList));
         }
     }
 
