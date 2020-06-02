@@ -81,6 +81,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
 
     //DataBase
     private AppDatabase mDb;
+    private Favorite mFavorite = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,14 +104,24 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
 
         mMovieData = new Gson().fromJson(data, Movie.class);
 
-        initViews();
-        initDB();
-        initRetrofit();
-        configTrailersRecyclerView();
-        configReviewsRecyclerView();
-        loadViews();
-        getMoviesTrailers();
-        getMoviesReviews();
+        initViews(); // Init Views
+        initDB(); // Init DataBase
+        checkIfIsFavorite(); // I pass a movie to this activity. So, I check if that movie is a favorite
+        initRetrofit(); // Init retrofit
+        configTrailersRecyclerView(); // Init RecyclerView for Trailers
+        configReviewsRecyclerView(); // Init RecyclerView for Reviews
+        loadViews(); // Load all movie data into the views
+        getMoviesTrailers(); // Download trailers
+        getMoviesReviews(); // Download Reviews
+    }
+
+    private void checkIfIsFavorite() {
+        mFavorite = mDb.favoriteDao().getFavoriteMovie(mMovieData);
+        if (mFavorite != null) {
+            isFavorite = true;
+        } else {
+            isFavorite = false;
+        }
     }
 
     private void initDB() {
@@ -283,25 +294,46 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
         });
     }
 
-    private void favoriteMovieSelected(MenuItem item) {
+    // Favorite icon menu
+    private void changeFavoriteState(MenuItem item) {
         if (isFavorite) {
-            // Change to white color
+            // If is favorite
             isFavorite = false;
-            DrawableCompat.setTint(
-                    DrawableCompat.wrap(item.getIcon()),
-                    ContextCompat.getColor(getApplicationContext(), R.color.whiteColor)
-            );
+            mDb.favoriteDao().deleteFavorite(mFavorite);
+            changeFavoriteColorIcon(item);
         } else {
             // Change to accent color
             isFavorite = true;
+            mDb.favoriteDao().insertFavorite(new Favorite(mMovieData, mTrailerInfoList, mReviewList));
+            changeFavoriteColorIcon(item);
+        }
+    }
+
+    private void changeFavoriteColorIcon(MenuItem item) {
+        if (isFavorite) {
+            // Is Favorite
             DrawableCompat.setTint(
                     DrawableCompat.wrap(item.getIcon()),
                     ContextCompat.getColor(getApplicationContext(), R.color.colorAccent)
             );
-            mDb.favoriteDao().insertFavorite(new Favorite(mMovieData, mTrailerInfoList, mReviewList));
+        } else {
+
+            // Isn't Favorite
+            DrawableCompat.setTint(
+                    DrawableCompat.wrap(item.getIcon()),
+                    ContextCompat.getColor(getApplicationContext(), R.color.whiteColor)
+            );
         }
     }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.movie_information_menu, menu);
+        MenuItem item = (MenuItem) menu.findItem(R.id.favorite_menu);
+        changeFavoriteColorIcon(item);
+        return true;
+    }
 
+    // Shared Trailer
     private void shareMovie() {
         if (mTrailerKey != null) {
             String youtubeURL = AppConstants.BASE_YOUTUBE_URL + mTrailerKey;
@@ -326,11 +358,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
         startActivity(intent);
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.movie_information_menu, menu);
-        return true;
-    }
+
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
@@ -338,7 +366,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
 
         switch (menuItemThatWasSelected) {
             case (R.id.favorite_menu):
-                favoriteMovieSelected(item);
+                changeFavoriteState(item);
                 break;
             case (R.id.share_menu):
                 shareMovie();
