@@ -9,6 +9,8 @@ public class MovieDBConstants {
     // Routes
     public final static String TOP_RATED_MOVIES= "movie/top_rated";
     public final static String POPULAR_MOVIES= "movie/popular";
+    public final static String GET_VIDEOS= "movie/{id}/videos";
+    public final static String GET_REVIEWS= "movie/{id}/reviews";
 
     // Params name
     public final static String KEY_PARAM = "api_key";

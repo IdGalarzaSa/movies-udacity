@@ -12,7 +12,6 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkRequest;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -22,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.galarzaIvan.movies.classes.MovieAdapter;
+import com.galarzaIvan.movies.classes.RetrofitController;
 import com.galarzaIvan.movies.models.Movie;
 import com.galarzaIvan.movies.requests.MovieRequests;
 import com.galarzaIvan.movies.constants.MovieDBConstants;
@@ -29,14 +29,12 @@ import com.galarzaIvan.movies.constants.AppConstants;
 import com.galarzaIvan.movies.models.MovieDbResponse;
 import com.google.gson.Gson;
 
-import java.io.Serializable;
 import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler {
 
@@ -49,7 +47,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private LinearLayout mLinearLayoutError;
     private TextView mErrorMessage;
     private Context mContext;
-    private ActionBar mActionBar;
     private Boolean isOnline;
     private LinearLayout mLinearLayoutLoading;
 
@@ -60,7 +57,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         Objects.requireNonNull(getSupportActionBar()).setElevation(0);
 
         mContext = this;
-        mActionBar = getSupportActionBar();
         netWorkConnection();
         initViews();            // In this method I will init all the views of this activity
         configRecyclerView();   // RecyclerView configs
@@ -123,10 +119,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     }
 
     private void initRetrofit() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(MovieDBConstants.HOST)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+        Retrofit retrofit = RetrofitController.getInstance();
         mMovieRequests = retrofit.create(MovieRequests.class);
     }
 
@@ -227,15 +220,15 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         //Parse data from an object to json (String) to send inside an intent
         String data = new Gson().toJson(movie);
         Intent intent = new Intent(this, MovieInfoActivity.class);
-        intent.putExtra(AppConstants.MOVIE_EXTRA,data);
+        intent.putExtra(AppConstants.MOVIE_EXTRA, data);
         startActivity(intent);
     }
 
-    private void showLoading(){
+    private void showLoading() {
         mLinearLayoutLoading.setVisibility(View.VISIBLE);
     }
 
-    private void hideLoading(){
+    private void hideLoading() {
         mLinearLayoutLoading.setVisibility(View.GONE);
     }
 }

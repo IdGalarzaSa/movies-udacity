@@ -9,4 +9,11 @@
         the internet and try again.</string>
     <string name="backdrop_image_movie_description">Backdrop Image - Movie description</string>
     <string name="loading">Loading...</string>
+    <string name="movie_without_information">This movie hasn\'t information</string>
+    <string name="youtube_image">Youtube image</string>
+    <string name="movie_trailers">Movie trailers</string>
+    <string name="reviews">Reviews</string>
+    <string name="favorite_item_menu">favoriteItemMenu</string>
+    <string name="share_item_menu">shareItemMenu</string>
+    <string name="share_message_trailer">Hey!!! I found this movie and I think that we can enjoy it. Would you like to see it?. Check this trailer:\n</string>
 </resources>
