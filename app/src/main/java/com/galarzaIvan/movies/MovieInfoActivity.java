@@ -10,6 +10,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -59,6 +62,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
 
     private Boolean isFavorite = false;
     private String mTrailerKey;
+    private Boolean isOnline = false;
 
     // Information Views
     private ImageView mMovieBackdropImage;
@@ -90,6 +94,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_info);
         mContext = this;
+        netWorkConnection();
 
         Intent intent = getIntent();
         String data = null;
@@ -117,6 +122,32 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
         getMoviesReviews(); // Download Reviews
     }
 
+
+    private void netWorkConnection() {
+        try {
+            ConnectivityManager connectivityManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkRequest.Builder builder = new NetworkRequest.Builder();
+
+            if (connectivityManager != null) {
+                connectivityManager.registerNetworkCallback(builder.build(), new ConnectivityManager.NetworkCallback() {
+                            @Override
+                            public void onAvailable(Network network) {
+                                isOnline = true;
+                            }
+
+                            @Override
+                            public void onLost(Network network) {
+                                isOnline = false;
+                            }
+                        }
+                );
+            }
+            isOnline = false;
+        } catch (Exception e) {
+            isOnline = false;
+        }
+    }
+
     private void checkIfIsFavorite() {
         AppExecutors.getInstance().diskIO().execute(new Runnable() {
             @Override
@@ -124,6 +155,18 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                 mFavorite = mDb.favoriteDao().getFavoriteMovie(mMovieData);
                 if (mFavorite != null) {
                     isFavorite = true;
+                    if (!isOnline) {
+                        // If is favorite and it's offline, Load data from room
+                        if (mFavorite.getTrailerInfo().size() > 0) {
+                            mTrailerKey = mFavorite.getTrailerInfo().get(0).getKey();
+                            mTrailerAdapter.setTrailerList(mFavorite.getTrailerInfo());
+                            showTrailers(true);
+                        }
+                        if (mFavorite.getReview().size() > 0) {
+                            mReviewAdapter.setReviewList(mFavorite.getReview());
+                            showReviews(true);
+                        }
+                    }
                 } else {
                     isFavorite = false;
                 }
@@ -217,92 +260,99 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
     }
 
     private void getMoviesTrailers() {
-        showLoading(true);
-        showTrailers(false);
-        Call<TrailerResponse> myCall = mMovieRequests.getMoviesTrailers(
-                mMovieData.getId(),
-                MovieDBConstants.API_KEY,
-                MovieDBConstants.LANGUAGE);
+        if (isOnline) {
+            showLoading(true);
+            showTrailers(false);
+            Call<TrailerResponse> myCall = mMovieRequests.getMoviesTrailers(
+                    mMovieData.getId(),
+                    MovieDBConstants.API_KEY,
+                    MovieDBConstants.LANGUAGE);
 
-        myCall.enqueue(new Callback<TrailerResponse>() {
-            @Override
-            public void onResponse(Call<TrailerResponse> call, Response<TrailerResponse> response) {
-                if (response.isSuccessful()) {
-                    if (response.body() != null) {
-                        Log.e(TAG, "onResponseTrailer: " + response.body().getResults());
+            myCall.enqueue(new Callback<TrailerResponse>() {
+                @Override
+                public void onResponse(Call<TrailerResponse> call, Response<TrailerResponse> response) {
+                    if (response.isSuccessful()) {
+                        if (response.body() != null) {
+                            Log.e(TAG, "onResponseTrailer: " + response.body().getResults());
 
-                        mTrailerInfoList = response.body().getResults();
-                        showLoading(false);
+                            mTrailerInfoList = response.body().getResults();
+                            showLoading(false);
 
-                        if (mTrailerInfoList.size() > 0){
-                            showTrailers(true);
-                            mTrailerKey = mTrailerInfoList.get(0).getKey();
+                            if (mTrailerInfoList.size() > 0) {
+                                showTrailers(true);
+                                mTrailerKey = mTrailerInfoList.get(0).getKey();
+                            } else {
+                                mTrailerKey = null;
+                                showTrailers(false);
+                            }
+
+                            mTrailerAdapter.setTrailerList(response.body().getResults());
+                        } else {
+                            //showError(getString(R.string.default_error_message));
+                            mTrailerAdapter.setTrailerList(null);
                         }
-                        else{
-                            mTrailerKey = null;
-                            showTrailers(false);
-                        }
-
-                        mTrailerAdapter.setTrailerList(response.body().getResults());
                     } else {
                         //showError(getString(R.string.default_error_message));
-                        mTrailerAdapter.setTrailerList(null);
+                        Log.e(TAG, "Unsuccessful call: " + response.toString());
                     }
-                } else {
-                    //showError(getString(R.string.default_error_message));
-                    Log.e(TAG, "Unsuccessful call: " + response.toString());
                 }
-            }
 
-            @Override
-            public void onFailure(Call<TrailerResponse> call, Throwable t) {
-                //showError(getString(R.string.default_error_message));
-                Log.e(TAG, "onFailure: " + t.toString());
-            }
-        });
+                @Override
+                public void onFailure(Call<TrailerResponse> call, Throwable t) {
+                    //showError(getString(R.string.default_error_message));
+                    Log.e(TAG, "onFailure: " + t.toString());
+                }
+            });
+        } else {
+            showLoading(false);
+            showTrailers(false);
+        }
     }
 
     private void getMoviesReviews() {
-        showLoading(true);
-        showReviews(false);
-        Call<ReviewResponse> myCall = mMovieRequests.getMoviesReviews(
-                mMovieData.getId(),
-                MovieDBConstants.API_KEY,
-                MovieDBConstants.LANGUAGE);
+        if (isOnline) {
+            Call<ReviewResponse> myCall = mMovieRequests.getMoviesReviews(
+                    mMovieData.getId(),
+                    MovieDBConstants.API_KEY,
+                    MovieDBConstants.LANGUAGE);
 
-        myCall.enqueue(new Callback<ReviewResponse>() {
-            @Override
-            public void onResponse(Call<ReviewResponse> call, Response<ReviewResponse> response) {
-                if (response.isSuccessful()) {
-                    if (response.body() != null) {
-                        Log.e(TAG, "onResponseReview: " + response.body().getResults());
+            myCall.enqueue(new Callback<ReviewResponse>() {
+                @Override
+                public void onResponse(Call<ReviewResponse> call, Response<ReviewResponse> response) {
+                    if (response.isSuccessful()) {
+                        if (response.body() != null) {
+                            Log.e(TAG, "onResponseReview: " + response.body().getResults());
 
-                        showLoading(false);
-                        mReviewList = response.body().getResults();
+                            showLoading(false);
+                            mReviewList = response.body().getResults();
 
-                        if (mReviewList.size()>0){
-                            showReviews(true);
-                        }else {
-                            showReviews(false);
+                            if (mReviewList.size() > 0) {
+                                showReviews(true);
+                            } else {
+                                showReviews(false);
+                            }
+
+                            mReviewAdapter.setReviewList(response.body().getResults());
+                        } else {
+                            //showError(getString(R.string.default_error_message));
+                            mTrailerAdapter.setTrailerList(null);
                         }
-
-                        mReviewAdapter.setReviewList(response.body().getResults());
                     } else {
                         //showError(getString(R.string.default_error_message));
-                        mTrailerAdapter.setTrailerList(null);
+                        Log.e(TAG, "Unsuccessful call: " + response.toString());
                     }
-                } else {
-                    //showError(getString(R.string.default_error_message));
-                    Log.e(TAG, "Unsuccessful call: " + response.toString());
                 }
-            }
 
-            @Override
-            public void onFailure(Call<ReviewResponse> call, Throwable t) {
-                //showError(getString(R.string.default_error_message));
-                Log.e(TAG, "onFailure: " + t.toString());
-            }
-        });
+                @Override
+                public void onFailure(Call<ReviewResponse> call, Throwable t) {
+                    //showError(getString(R.string.default_error_message));
+                    Log.e(TAG, "onFailure: " + t.toString());
+                }
+            });
+        } else {
+            showLoading(false);
+            showReviews(false);
+        }
     }
 
     // Favorite icon menu
