@@ -225,17 +225,16 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                         Log.e(TAG, "onResponseTrailer: " + response.body().getResults());
 
                         mTrailerInfoList = response.body().getResults();
-
                         showLoading(false);
-                        showTrailers(true);
 
-                        /*
-                        Getting the key of the first trailer for saving in a variable that I will
-                        use for share. The validations if it's null it's gonna be in shareMovie()
-                        method
-                        */
-
-                        mTrailerKey = response.body().getResults().get(0).getKey();
+                        if (mTrailerInfoList.size() > 0){
+                            showTrailers(true);
+                            mTrailerKey = mTrailerInfoList.get(0).getKey();
+                        }
+                        else{
+                            mTrailerKey = null;
+                            showTrailers(false);
+                        }
 
                         mTrailerAdapter.setTrailerList(response.body().getResults());
                     } else {
@@ -271,10 +270,15 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
                     if (response.body() != null) {
                         Log.e(TAG, "onResponseReview: " + response.body().getResults());
 
+                        showLoading(false);
                         mReviewList = response.body().getResults();
 
-                        showLoading(false);
-                        showReviews(true);
+                        if (mReviewList.size()>0){
+                            showReviews(true);
+                        }else {
+                            showReviews(false);
+                        }
+
                         mReviewAdapter.setReviewList(response.body().getResults());
                     } else {
                         //showError(getString(R.string.default_error_message));
@@ -325,6 +329,7 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
             );
         }
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.movie_information_menu, menu);
@@ -357,8 +362,6 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
         intent.putExtra(AppConstants.VIDEO_ID, trailerInfo.getKey());
         startActivity(intent);
     }
-
-
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {

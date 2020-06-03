@@ -1,13 +1,13 @@
 package com.galarzaIvan.movies;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkRequest;
@@ -30,6 +30,7 @@ import com.galarzaIvan.movies.constants.AppConstants;
 import com.galarzaIvan.movies.models.MovieDbResponse;
 import com.google.gson.Gson;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -42,15 +43,18 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
     private String TAG = "MainActivity";
 
+    private static final String MAIN_INSTANCE = "main_instance";
+
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
     private MovieRequests mMovieRequests;
-    private Call<MovieDbResponse> mCurrentCall;
+    private String mCurrentMovieCall;
     private LinearLayout mLinearLayoutError;
     private TextView mErrorMessage;
     private Context mContext;
     private Boolean isOnline;
     private LinearLayout mLinearLayoutLoading;
+    private List<Movie> mMovieList;
 
     //Database
     private AppDatabase mDb;
@@ -70,7 +74,19 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         initViews();            // In this method I will init all the views of this activity
         configRecyclerView();   // RecyclerView configs
         initRetrofit();         // Init Retrofit
-        getData(createTopRatedMoviesCall()); // Set a default top rated movies call
+
+        if (savedInstanceState != null) {
+            if (savedInstanceState.containsKey(MAIN_INSTANCE)) {
+                hideLoading();
+                hideError();
+                String previousData = savedInstanceState.getString(MAIN_INSTANCE);
+                List<Movie> movieList = Arrays.asList(new Gson().fromJson(previousData, Movie[].class));
+                mMovieAdapter.setMovieList(movieList);
+            }
+        } else {
+            getTopRated();
+        }
+
     }
 
     private void netWorkConnection() {
@@ -110,18 +126,37 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         mRetryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getData(mCurrentCall);
+                switch (mCurrentMovieCall) {
+                    case AppConstants.POPULAR:
+                        getPopular();
+                        break;
+                    case AppConstants.FAVORITES:
+                        getFavorites();
+                        break;
+                    case AppConstants.TOP_RATED:
+                    default:
+                        getTopRated();
+                }
             }
         });
-
     }
 
     private void configRecyclerView() {
+
+        GridLayoutManager gridLayoutManager;
+        if (mContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            gridLayoutManager = new GridLayoutManager(
+                    this,
+                    AppConstants.GRID_PORTRAIT
+            );
+        } else {
+            gridLayoutManager = new GridLayoutManager(
+                    this,
+                    AppConstants.GRID_LANDSCAPE
+            );
+        }
+
         mRecyclerView.setHasFixedSize(true);
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(
-                this,
-                AppConstants.GRID_COLLUMNS
-        );
         mRecyclerView.setLayoutManager(gridLayoutManager);
         mMovieAdapter = new MovieAdapter(this);
         mRecyclerView.setAdapter(mMovieAdapter);
@@ -130,55 +165,6 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private void initRetrofit() {
         Retrofit retrofit = RetrofitController.getInstance();
         mMovieRequests = retrofit.create(MovieRequests.class);
-    }
-
-    // For default gets the popular movies
-    private void getData(final Call<MovieDbResponse> myCall) {
-        if (isOnline) {
-            hideError();
-            showLoading();
-            getMovies(myCall);
-        } else {
-            showError(getString(R.string.no_network_connection));
-        }
-    }
-
-    private void getMovies(Call<MovieDbResponse> myCall) {
-        /*
-         * I save this call into a variable if I have any network problem and the user needs to use the "retry" button
-         */
-        mCurrentCall = myCall.clone();
-
-        myCall.enqueue(new Callback<MovieDbResponse>() {
-            @Override
-            public void onResponse(Call<MovieDbResponse> call, Response<MovieDbResponse> response) {
-                if (response.isSuccessful()) {
-                    if (response.body() != null) {
-                        hideError();
-                        mMovieAdapter.setMovieList(response.body().results);
-                    } else {
-                        showError(getString(R.string.default_error_message));
-                        mMovieAdapter.setMovieList(null);
-                    }
-                } else {
-                    showError(getString(R.string.default_error_message));
-                    Log.e(TAG, "Unsuccessful call: " + response.toString());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<MovieDbResponse> call, Throwable t) {
-                showError(getString(R.string.default_error_message));
-                Log.e(TAG, "onFailure: " + t.toString());
-            }
-        });
-    }
-
-    private void showError(String errorMessage) {
-        mErrorMessage.setText(errorMessage);
-        mLinearLayoutError.setVisibility(View.VISIBLE);
-        mRecyclerView.setVisibility(View.GONE);
-        hideLoading();
     }
 
     private void hideError() {
@@ -202,39 +188,89 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
                 getFavorites();
                 break;
             case R.id.order_by_top_rated_movies:
-                callResponse = createTopRatedMoviesCall();
-                getData(callResponse);
+                getTopRated();
                 break;
             case R.id.order_by_popular_movies:
             default:
-                callResponse = createPopularMoviesCall();
-                getData(callResponse);
+                getPopular();
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private Call<MovieDbResponse> createPopularMoviesCall() {
-        setTitle(getString(R.string.popular));
-        return mMovieRequests.getPopularMovies(
-                MovieDBConstants.API_KEY,
-                MovieDBConstants.LANGUAGE);
+    private void getPopular() {
+        if (isOnline) {
+            hideError();
+            showLoading();
+            mCurrentMovieCall = AppConstants.POPULAR;
+            setTitle(getString(R.string.popular));
+            Call<MovieDbResponse> myCall = mMovieRequests.getPopularMovies(
+                    MovieDBConstants.API_KEY,
+                    MovieDBConstants.LANGUAGE);
+            getMovies(myCall);
+        } else {
+            showError(getString(R.string.no_network_connection));
+        }
     }
 
-    private Call<MovieDbResponse> createTopRatedMoviesCall() {
-        setTitle(getString(R.string.top_rated));
-        return mMovieRequests.getMoviesTopRated(
-                MovieDBConstants.API_KEY,
-                MovieDBConstants.LANGUAGE);
+    private void getTopRated() {
+        if (isOnline) {
+            hideError();
+            showLoading();
+            mCurrentMovieCall = AppConstants.TOP_RATED;
+            setTitle(getString(R.string.top_rated));
+            Call<MovieDbResponse> myCall = mMovieRequests.getMoviesTopRated(
+                    MovieDBConstants.API_KEY,
+                    MovieDBConstants.LANGUAGE);
+
+            getMovies(myCall);
+        } else {
+            showError(getString(R.string.no_network_connection));
+        }
     }
 
     private void getFavorites() {
+        hideError();
+        showLoading();
+        mCurrentMovieCall = AppConstants.FAVORITES;
         List<Movie> movies = mDb.favoriteDao().getFavoritesMovies();
+
         mMovieAdapter.setMovieList(movies);
+        hideError();
+    }
+
+    private void getMovies(Call<MovieDbResponse> myCall) {
+        myCall.enqueue(new Callback<MovieDbResponse>() {
+            @Override
+            public void onResponse(Call<MovieDbResponse> call, Response<MovieDbResponse> response) {
+                if (response.isSuccessful()) {
+                    if (response.body() != null) {
+                        hideError();
+                        mMovieList = response.body().results;
+                        if (mMovieList != null && mMovieList.size() > 0) {
+                            mMovieAdapter.setMovieList(mMovieList);
+                        } else {
+                            mMovieAdapter.setMovieList(null);
+                        }
+                    } else {
+                        showError(getString(R.string.default_error_message));
+                        mMovieAdapter.setMovieList(null);
+                    }
+                } else {
+                    showError(getString(R.string.default_error_message));
+                    Log.e(TAG, "Unsuccessful call: " + response.toString());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MovieDbResponse> call, Throwable t) {
+                showError(getString(R.string.default_error_message));
+                Log.e(TAG, "onFailure: " + t.toString());
+            }
+        });
     }
 
     @Override
     public void movieClickListener(Movie movie) {
-
         //Parse data from an object to json (String) to send inside an intent
         String data = new Gson().toJson(movie);
         Intent intent = new Intent(this, MovieInfoActivity.class);
@@ -249,4 +285,19 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private void hideLoading() {
         mLinearLayoutLoading.setVisibility(View.GONE);
     }
+
+    private void showError(String errorMessage) {
+        mErrorMessage.setText(errorMessage);
+        mLinearLayoutError.setVisibility(View.VISIBLE);
+        mRecyclerView.setVisibility(View.GONE);
+        hideLoading();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        String data = new Gson().toJson(mMovieList);
+        outState.putString(MAIN_INSTANCE, data);
+    }
+
 }
