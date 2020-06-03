@@ -16,4 +16,9 @@ public class AppConstants {
     public static final String TOP_RATED = "top_rated";
     public static final String POPULAR= "popular";
 
+    //Title
+    public static final String FAVORITE_TITLE = "Favorites Movies";
+    public static final String TOP_RATED_TITLE = "Top Rated Movies";
+    public static final String POPULAR_TITLE = "Popular Movies";
+
 }

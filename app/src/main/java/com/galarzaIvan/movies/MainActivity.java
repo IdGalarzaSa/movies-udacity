@@ -1,7 +1,10 @@
 package com.galarzaIvan.movies;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,7 +25,7 @@ import android.widget.TextView;
 
 import com.galarzaIvan.movies.classes.MovieAdapter;
 import com.galarzaIvan.movies.classes.RetrofitController;
-import com.galarzaIvan.movies.database.AppDatabase;
+import com.galarzaIvan.movies.database.FavoriteViewModel;
 import com.galarzaIvan.movies.models.Movie;
 import com.galarzaIvan.movies.requests.MovieRequests;
 import com.galarzaIvan.movies.constants.MovieDBConstants;
@@ -42,22 +45,29 @@ import retrofit2.Retrofit;
 public class MainActivity extends AppCompatActivity implements MovieAdapter.MovieAdapterOnClickHandler {
 
     private String TAG = "MainActivity";
+    private Context mContext;
 
-    private static final String MAIN_INSTANCE = "main_instance";
+    private static final String MOVIE_LIST_INSTANCE = "movie_list_instance";
+    private static final String FAVORITE_LIST_INSTANCE = "favorite_list_instance";
+    private static final String TITLE_INSTANCE = "title_instance";
 
+    // Recycler
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
+    // Retrofit
     private MovieRequests mMovieRequests;
-    private String mCurrentMovieCall;
+    // Variables
+    private String mCurrentMovieCall = "";
+    private Boolean isOnline;
+    private List<Movie> mMovieList;
+    private List<Movie> mFavoriteMovieList;
+    private String mTitle = "";
+    // Views
     private LinearLayout mLinearLayoutError;
     private TextView mErrorMessage;
-    private Context mContext;
-    private Boolean isOnline;
     private LinearLayout mLinearLayoutLoading;
-    private List<Movie> mMovieList;
 
-    //Database
-    private AppDatabase mDb;
+    private FavoriteViewModel mViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,27 +76,44 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         Objects.requireNonNull(getSupportActionBar()).setElevation(0);
 
         mContext = this;
-
-        // Init Database
-        mDb = AppDatabase.getInstance(this);
+        // Init ViewModel
+        mViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
 
         netWorkConnection();
         initViews();            // In this method I will init all the views of this activity
         configRecyclerView();   // RecyclerView configs
-        initRetrofit();         // Init Retrofit
+        initRetrofit();       // Init Retrofit
+        initViewHolder();
 
         if (savedInstanceState != null) {
-            if (savedInstanceState.containsKey(MAIN_INSTANCE)) {
+            if (savedInstanceState.containsKey(MOVIE_LIST_INSTANCE) && savedInstanceState.containsKey(TITLE_INSTANCE)) {
                 hideLoading();
                 hideError();
-                String previousData = savedInstanceState.getString(MAIN_INSTANCE);
-                List<Movie> movieList = Arrays.asList(new Gson().fromJson(previousData, Movie[].class));
-                mMovieAdapter.setMovieList(movieList);
+                mTitle = savedInstanceState.getString(TITLE_INSTANCE);
+                setTitle(mTitle);
+                if (mTitle.equals(AppConstants.FAVORITE_TITLE)) {
+                    String previousData = savedInstanceState.getString(FAVORITE_LIST_INSTANCE);
+                    mMovieList = Arrays.asList(new Gson().fromJson(previousData, Movie[].class));
+                    mMovieAdapter.setMovieList(mMovieList);
+                } else {
+                    String previousData = savedInstanceState.getString(MOVIE_LIST_INSTANCE);
+                    mMovieList = Arrays.asList(new Gson().fromJson(previousData, Movie[].class));
+                    mMovieAdapter.setMovieList(mMovieList);
+                }
             }
         } else {
             getTopRated();
         }
 
+    }
+
+    private void initViewHolder() {
+        mViewModel.getMovies().observe(this, new Observer<List<Movie>>() {
+            @Override
+            public void onChanged(@Nullable List<Movie> movieList) {
+                mFavoriteMovieList = movieList;
+            }
+        });
     }
 
     private void netWorkConnection() {
@@ -123,6 +150,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
 
         // Retry buttton
         Button mRetryButton = (Button) findViewById(R.id.bt_retry);
+
         mRetryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -202,6 +230,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
             hideError();
             showLoading();
             mCurrentMovieCall = AppConstants.POPULAR;
+            mTitle = AppConstants.POPULAR_TITLE;
             setTitle(getString(R.string.popular));
             Call<MovieDbResponse> myCall = mMovieRequests.getPopularMovies(
                     MovieDBConstants.API_KEY,
@@ -216,6 +245,7 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
         if (isOnline) {
             hideError();
             showLoading();
+            mTitle = AppConstants.TOP_RATED_TITLE;
             mCurrentMovieCall = AppConstants.TOP_RATED;
             setTitle(getString(R.string.top_rated));
             Call<MovieDbResponse> myCall = mMovieRequests.getMoviesTopRated(
@@ -231,11 +261,11 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     private void getFavorites() {
         hideError();
         showLoading();
+        setTitle(getString(R.string.favoriteMoviesTitle));
         mCurrentMovieCall = AppConstants.FAVORITES;
-        List<Movie> movies = mDb.favoriteDao().getFavoritesMovies();
-
-        mMovieAdapter.setMovieList(movies);
-        hideError();
+        mTitle = AppConstants.FAVORITE_TITLE;
+        hideLoading();
+        mMovieAdapter.setMovieList(mFavoriteMovieList);
     }
 
     private void getMovies(Call<MovieDbResponse> myCall) {
@@ -296,8 +326,12 @@ public class MainActivity extends AppCompatActivity implements MovieAdapter.Movi
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        String data = new Gson().toJson(mMovieList);
-        outState.putString(MAIN_INSTANCE, data);
-    }
+        outState.putString(TITLE_INSTANCE, mTitle);
 
+        String dataMovie = new Gson().toJson(mMovieList);
+        outState.putString(MOVIE_LIST_INSTANCE, dataMovie);
+
+        String dataFavorite = new Gson().toJson(mFavoriteMovieList);
+        outState.putString(FAVORITE_LIST_INSTANCE, dataFavorite);
+    }
 }

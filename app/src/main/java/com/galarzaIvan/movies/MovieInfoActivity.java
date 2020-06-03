@@ -34,6 +34,7 @@ import com.galarzaIvan.movies.models.ReviewResponse;
 import com.galarzaIvan.movies.models.TrailerInfo;
 import com.galarzaIvan.movies.models.TrailerResponse;
 import com.galarzaIvan.movies.requests.MovieRequests;
+import com.galarzaIvan.movies.utils.AppExecutors;
 import com.google.gson.Gson;
 import com.squareup.picasso.Picasso;
 
@@ -116,12 +117,17 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
     }
 
     private void checkIfIsFavorite() {
-        mFavorite = mDb.favoriteDao().getFavoriteMovie(mMovieData);
-        if (mFavorite != null) {
-            isFavorite = true;
-        } else {
-            isFavorite = false;
-        }
+        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                mFavorite = mDb.favoriteDao().getFavoriteMovie(mMovieData);
+                if (mFavorite != null) {
+                    isFavorite = true;
+                } else {
+                    isFavorite = false;
+                }
+            }
+        });
     }
 
     private void initDB() {
@@ -303,12 +309,22 @@ public class MovieInfoActivity extends AppCompatActivity implements TrailerAdapt
         if (isFavorite) {
             // If is favorite
             isFavorite = false;
-            mDb.favoriteDao().deleteFavorite(mFavorite);
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    mDb.favoriteDao().deleteFavorite(mFavorite.getMovie());
+                }
+            });
             changeFavoriteColorIcon(item);
         } else {
             // Change to accent color
             isFavorite = true;
-            mDb.favoriteDao().insertFavorite(new Favorite(mMovieData, mTrailerInfoList, mReviewList));
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    mDb.favoriteDao().insertFavorite(new Favorite(mMovieData, mTrailerInfoList, mReviewList));
+                }
+            });
             changeFavoriteColorIcon(item);
         }
     }

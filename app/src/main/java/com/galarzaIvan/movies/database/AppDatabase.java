@@ -8,8 +8,6 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
 
-import com.galarzaIvan.movies.models.Movie;
-
 @Database(entities = {Favorite.class}, version = 1, exportSchema = false)
 @TypeConverters({TypeConvertTrailers.class, TypeConvertReviews.class, TypeConvertMovie.class})
 public abstract class AppDatabase extends RoomDatabase {
@@ -26,7 +24,6 @@ public abstract class AppDatabase extends RoomDatabase {
                 sInstance = Room.databaseBuilder(context.getApplicationContext(),
                         AppDatabase.class, AppDatabase.DATABASE_NAME)
                         // Just for testing and make tests
-                        .allowMainThreadQueries()
                         .build();
             }
         }
